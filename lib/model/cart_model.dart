@@ -17,11 +17,13 @@ class CartModel extends ChangeNotifier {
   UnmodifiableListView<Item> get AvItems =>
       UnmodifiableListView(availableItems);
 
+  bool _hasInitialized = false;
+  bool _hasInitializedCart = false;
   double get totalPrice => _items.fold(0, (total, item) => total + item.price);
   double get price => _items.fold(0, (total, item) => item.price);
   String get name => _items.fold('', (name, item) => item.name);
 
-  Future<void> mergeItems() async {
+  void mergeItems() {
     mergeAvailableItemsData();
     mergeCartItemsData();
   }
@@ -30,7 +32,6 @@ class CartModel extends ChangeNotifier {
     final database = FirebaseDatabase.instance.ref();
     final snapshot = database.child('availableItems');
 
-    bool _hasInitialized = false;
     snapshot.onValue.listen((event) {
       if (!_hasInitialized) {
         for (var child in event.snapshot.children) {
@@ -48,16 +49,15 @@ class CartModel extends ChangeNotifier {
   void mergeCartItemsData() async {
     final database = FirebaseDatabase.instance.ref();
     final snapshot = database.child('cartItems');
-    bool _hasInitialized = false;
     snapshot.onValue.listen((event) {
-      if (!_hasInitialized) {
+      if (!_hasInitializedCart) {
         for (var child in event.snapshot.children) {
           dynamic itemData = child.value; // Get the dynamic data for each item
           Item item = Item.fromJson(
               itemData); // Convert to Item using your 'fromJson' method
           _items.add(item); // Add the converted Item to the list
         }
-        _hasInitialized = true;
+        _hasInitializedCart = true;
       }
       notifyListeners();
     });
@@ -87,7 +87,6 @@ class CartModel extends ChangeNotifier {
   }
 
   void adddb(Item item) {
-    print(availableItems);
     availableItems.add(item);
     updateAvailableItems(availableItems);
     notifyListeners();
